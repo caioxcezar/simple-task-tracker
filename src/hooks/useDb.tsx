@@ -9,6 +9,7 @@ import type Day from "@/types/day";
 import type Task from "@/types/task";
 import type TaskDto from "@/types/taskDto";
 import DayDto from "@/types/dayDto";
+import { exportDB, importInto } from "dexie-export-import";
 
 const load = () => {
   const db = new Dexie("Database") as Dexie & {
@@ -22,6 +23,18 @@ const load = () => {
   return db;
 };
 
+const getFile = (): Promise<File> =>
+  new Promise((resolve, reject) => {
+    const element = document.createElement("input");
+    element.type = "file";
+    element.click();
+    element.addEventListener("change", () => {
+      if (element.files?.length) return resolve(element.files[0]);
+      element.remove();
+      reject(new Error("No file selected"));
+    });
+  });
+
 const useDb = () => {
   const db = useRef(load()).current;
   return {
@@ -31,7 +44,7 @@ const useDb = () => {
       changes: UpdateSpec<InsertType<Day, "id">>
     ) => db.days.update(key, changes),
     addTask: (task: TaskDto) => db.tasks.put(task),
-    day: (date: number) => db.days.where("date").equals(date).toArray(),
+    day: async (date: number) => db.days.where("date").equals(date).first(),
     updateTask: (
       key: number | Task,
       changes: UpdateSpec<InsertType<Task, "id">>
@@ -44,6 +57,22 @@ const useDb = () => {
         .toArray();
     },
     allDays: () => db.days.toArray(),
+    import: async () => {
+      const blob = await getFile();
+
+      await importInto(db, blob, {
+        overwriteValues: true,
+        clearTablesBeforeImport: true,
+      });
+    },
+    export: async () => {
+      const blob = await exportDB(db);
+      const element = document.createElement("a");
+      element.href = URL.createObjectURL(blob);
+      element.download = "database.json";
+      element.click();
+      element.remove();
+    },
   };
 };
 

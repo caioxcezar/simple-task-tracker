@@ -9,6 +9,8 @@ import { DateTime } from "luxon";
 import { Status as StatusDay } from "@/types/dayDto";
 import { ButtonType } from "@/types/buttonType";
 import Day from "@/types/day";
+import Image from "next/image";
+import { toast, ToastContainer } from "react-toastify";
 
 const now = () => DateTime.now().startOf("day");
 export default function Home() {
@@ -20,9 +22,10 @@ export default function Home() {
   const [markedTasks, setMarkedTasks] = useState<number[]>([]);
 
   useEffect(() => {
-    loadTasks();
-    loadDays();
+    onLoad();
   }, []);
+
+  const onLoad = () => Promise.all([loadTasks(), loadDays()]);
 
   const loadTasks = async () => {
     const tasks = await db.allActiveTasks(currentDay.toMillis());
@@ -72,7 +75,7 @@ export default function Home() {
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const updateDay = async (obj: any) => {
     const dbEntry = await db.day(obj.date);
-    if (dbEntry.length) await db.updateDay(dbEntry[0].id, obj);
+    if (dbEntry) await db.updateDay(dbEntry.id, obj);
     else await db.addDay(obj);
     loadDays();
   };
@@ -128,6 +131,36 @@ export default function Home() {
           </div>
         </div>
       </div>
+      <div>
+        <div className="absolute bottom-0 right-0 m-2 flex gap-2">
+          <Image
+            src="upload.svg"
+            width={50}
+            height={50}
+            alt="Upload DataBase"
+            onClick={() =>
+              db
+                .import()
+                .then(onLoad)
+                .then(() => toast.success("Uploaded"))
+                .catch((err) => toast.error(err.Message))
+            }
+          />
+          <Image
+            src="download.svg"
+            width={50}
+            height={50}
+            alt="Download DataBase"
+            onClick={() =>
+              db
+                .export()
+                .then(() => toast.success("Downloaded"))
+                .catch((err) => toast.error(err.Message))
+            }
+          />
+        </div>
+      </div>
+      <ToastContainer />
     </div>
   );
 }
