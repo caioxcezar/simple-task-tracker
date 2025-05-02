@@ -20,6 +20,11 @@ export default function Home() {
   const [value, setValue] = useState("");
   const [currentDay, setCurrentDay] = useState(now());
   const [markedTasks, setMarkedTasks] = useState<number[]>([]);
+  const [taskDay, setTaskDay] = useState<Day | undefined>();
+
+  useEffect(() => {
+    (async () => setTaskDay(await db.day(currentDay.toMillis())))();
+  }, [currentDay]);
 
   useEffect(() => {
     onLoad();
@@ -88,7 +93,25 @@ export default function Home() {
   return (
     <div>
       <div className="flex flex-col xl:flex-row gap-2">
-        <Calendar onPress={changeDay} dates={days} />
+        <div>
+          <Calendar onPress={changeDay} dates={days} />
+          {taskDay && (
+            <div>
+              <span className="text-xl font-medium">
+                Task completed day{" "}
+                {DateTime.fromMillis(taskDay.date).toLocaleString(
+                  DateTime.DATETIME_SHORT
+                )}
+                :
+              </span>
+              <ul className="pl-5 list-disc">
+                {taskDay.tasks.map((task) => (
+                  <li key={task}>{task}</li>
+                ))}
+              </ul>
+            </div>
+          )}
+        </div>
         <div className="flex-grow">
           <div>
             <span className="block mb-2 text-2xl font-medium">Add task</span>
