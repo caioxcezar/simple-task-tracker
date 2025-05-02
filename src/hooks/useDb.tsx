@@ -9,7 +9,6 @@ import type Day from "@/types/day";
 import type Task from "@/types/task";
 import type TaskDto from "@/types/taskDto";
 import DayDto from "@/types/dayDto";
-import { exportDB, importInto } from "dexie-export-import";
 
 const load = () => {
   const db = new Dexie("Database") as Dexie & {
@@ -58,6 +57,7 @@ const useDb = () => {
     },
     allDays: () => db.days.toArray(),
     import: async () => {
+      const { importInto } = await import("dexie-export-import");
       const blob = await getFile();
 
       await importInto(db, blob, {
@@ -66,6 +66,7 @@ const useDb = () => {
       });
     },
     export: async () => {
+      const { exportDB } = await import("dexie-export-import");
       const blob = await exportDB(db);
       const element = document.createElement("a");
       element.href = URL.createObjectURL(blob);
