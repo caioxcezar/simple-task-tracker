@@ -17,11 +17,6 @@ const Calendar = ({
     setInterval(() => setDate(DateTime.now()), 1000 * 60);
   }, []);
 
-  const strDate = useMemo(
-    () => date.toLocaleString(DateTime.DATETIME_SHORT),
-    [date]
-  );
-
   const grid = useMemo(() => {
     const _grid = [];
     const start = date.startOf("month");
@@ -90,7 +85,6 @@ const Calendar = ({
 
   return (
     <div>
-      <span className="text-2xl">{strDate}</span>
       {week}
       {grid}
     </div>
