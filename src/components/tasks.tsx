@@ -3,7 +3,7 @@ import Button from "./button";
 import Task from "@/components/task";
 import { ButtonType } from "@/types/buttonType";
 import { wrapPromise } from "@/utils/suspense";
-import { Suspense, useMemo, useRef, useState } from "react";
+import { Suspense, useMemo, useState } from "react";
 import ActivityIndicator from "./activityIndicator";
 import { DayStatusType } from "@/types/day";
 import { toast } from "react-toastify";
@@ -25,8 +25,6 @@ const Tasks = ({
   const alert = useAlert();
 
   const [markedTasks, setMarkedTasks] = useState<number[]>([]);
-  const _tasks = useRef<Task[]>([]);
-  const tasks = _tasks.current;
 
   const promise = useMemo(
     () => wrapPromise(db.allActiveTasks(date)),
@@ -76,6 +74,7 @@ const Tasks = ({
 
   const setCompleted = (isPartial: boolean) => {
     const setCompleted = async (date: number) => {
+      const tasks = await db.allActiveTasks(date);
       const obj = {
         date,
         tasks: tasks.map(({ name }) => name),
@@ -85,6 +84,7 @@ const Tasks = ({
     };
 
     const setPartialCompleted = async (date: number) => {
+      const tasks = await db.allActiveTasks(date);
       const obj = {
         date,
         tasks: tasks
@@ -106,15 +106,14 @@ const Tasks = ({
     params.options!.push({
       title: "Yes",
       onPress: () =>
-        isPartial ? setCompleted(date) : setPartialCompleted(date),
+        isPartial ? setPartialCompleted(date) : setCompleted(date),
       type: ButtonType.SUCCESS,
     });
     const today = now().toMillis();
-    if (date !== today)
+    if (date !== today && !isPartial)
       params.options!.push({
         title: "Mark today",
-        onPress: () =>
-          isPartial ? setCompleted(today) : setPartialCompleted(today),
+        onPress: () => setCompleted(today),
         type: ButtonType.PRIMARY,
       });
     params.options!.push({
@@ -135,9 +134,12 @@ const Tasks = ({
       const dbEntry = await db.day(obj.date);
       if (dbEntry) await db.updateDay(dbEntry.id, obj);
       else await db.addDay(obj);
+      setMarkedTasks([]);
       onAction();
     } catch (error) {
       toast.error((error as Error).message);
+    } finally {
+      alert.close();
     }
   };
 
@@ -149,7 +151,6 @@ const Tasks = ({
   const Render = () => {
     const tasks = promise.read();
     if (!tasks) return <></>;
-    _tasks.current = tasks;
     return (
       <div className="grid gap-2">
         <div>
