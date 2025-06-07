@@ -38,7 +38,7 @@ export const AlertProvider = ({ children }: { children: ReactNode }) => {
           className="absolute w-full h-full bg-black/75 top-0 flex justify-center"
           onClick={onClickOut}
         >
-          <div className="w-1/4 h-1/4 bg-blue-950 rounded-xl m-auto flex flex-col">
+          <div className="max-w-1/4 min-h-1/4 bg-blue-950 rounded-xl m-auto flex flex-col">
             <div className="text-5xl m-2">{title}</div>
             <div className="mt-2 flex-1 ml-2 mr-2">{body}</div>
             <div className="flex gap-2 m-2 justify-end">
