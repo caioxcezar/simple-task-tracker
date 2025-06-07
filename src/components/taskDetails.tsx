@@ -12,7 +12,7 @@ const TaskDetails = ({ date, extra }: { date: number; extra?: unknown }) => {
     if (!task) return <></>;
     return (
       <div>
-        <span className="text-xl font-medium">Task completed day</span>
+        <span className="text-xl font-medium">Task completed in this day</span>
         <ul className="pl-5 list-disc">
           {task.tasks.map((task) => (
             <li key={task}>{task}</li>
