@@ -1,11 +1,11 @@
-export default interface Day {
+export default interface DayType {
   id: number;
   date: number;
-  status: Status;
+  status: DayStatusType;
   tasks: string[];
 }
 
-enum Status {
+export enum DayStatusType {
   INCOMPLETED,
   COMPLETED,
   PARTIAL,

@@ -5,17 +5,21 @@ import Calendar from "@/components/calendar";
 import Input from "@/components/input";
 import useDb from "@/hooks/useDb";
 import { DateTime } from "luxon";
-import Day from "@/types/day";
-import { ToastContainer } from "react-toastify";
+import type DayType from "@/types/day";
 import TaskDetails from "@/components/taskDetails";
 import { now } from "@/utils/date";
 import DbActions from "@/components/dbActions";
 import Tasks from "@/components/tasks";
+import { toast } from "react-toastify";
+import useAlert from "@/hooks/useAlert";
+import { AlertParamsType } from "@/types/alert";
+import { ButtonType } from "@/types/buttonType";
 
 export default function Home() {
   const db = useDb();
+  const alert = useAlert();
 
-  const [days, setDays] = useState<Day[]>([]);
+  const [days, setDays] = useState<DayType[]>([]);
   const [value, setValue] = useState("");
   const [date, setCurrentDay] = useState(now().toMillis());
 
@@ -34,13 +38,60 @@ export default function Home() {
   };
 
   const loadDays = async () => {
-    setDays(await db.allDays());
+    try {
+      setDays(await db.allDays());
+    } catch (error) {
+      toast.error((error as Error).message);
+    }
   };
 
   const addTask = () => {
-    if (!value.trim()) return;
-    db.addTask({ name: value, start: date });
-    refreshTasks();
+    const name = value.trim();
+    if (!name) return;
+
+    const save = (start: number) => {
+      try {
+        db.addTask({ name, start });
+        refreshTasks();
+        setValue("");
+        const str = DateTime.fromMillis(date).toLocaleString(
+          DateTime.DATE_SHORT
+        );
+        toast.success(`Task saved in the day ${str} successfully`);
+        alert.close();
+      } catch (error) {
+        toast.error((error as Error).message);
+      }
+    };
+
+    const params: AlertParamsType = {
+      title: "Before Saving",
+      body:
+        'The task "' +
+        name +
+        '" will be saved in the day ' +
+        DateTime.fromMillis(date).toLocaleString(DateTime.DATE_SHORT) +
+        ". Are You sure?",
+      options: [],
+    };
+    params.options!.push({
+      title: "Yes",
+      onPress: () => save(date),
+      type: ButtonType.SUCCESS,
+    });
+    const today = now().toMillis();
+    if (date !== today)
+      params.options!.push({
+        title: "Save today",
+        onPress: () => save(today),
+        type: ButtonType.PRIMARY,
+      });
+    params.options!.push({
+      title: "No",
+      onPress: alert.close,
+      type: ButtonType.DANGER,
+    });
+    alert.open(params);
   };
 
   const changeDay = (date: DateTime) => {
@@ -84,7 +135,6 @@ export default function Home() {
       <div>
         <DbActions onAction={onLoad} />
       </div>
-      <ToastContainer />
     </div>
   );
 }

@@ -5,14 +5,14 @@ import {
   type EntityTable,
   type InsertType,
 } from "dexie";
-import type Day from "@/types/day";
+import type DayType from "@/types/day";
 import type Task from "@/types/task";
 import type TaskDto from "@/types/taskDto";
-import DayDto from "@/types/dayDto";
+import type DayTypeDto from "@/types/dayDto";
 
 const load = () => {
   const db = new Dexie("Database") as Dexie & {
-    days: EntityTable<Day, "id">;
+    days: EntityTable<DayType, "id">;
     tasks: EntityTable<Task, "id">;
   };
   db.version(1).stores({
@@ -37,10 +37,10 @@ const getFile = (): Promise<File> =>
 const useDb = () => {
   const db = useRef(load()).current;
   return {
-    addDay: (day: DayDto) => db.days.put(day),
+    addDay: (day: DayTypeDto) => db.days.put(day),
     updateDay: (
-      key: number | Day,
-      changes: UpdateSpec<InsertType<Day, "id">>
+      key: number | DayType,
+      changes: UpdateSpec<InsertType<DayType, "id">>
     ) => db.days.update(key, changes),
     addTask: (task: TaskDto) => db.tasks.put(task),
     day: async (date: number) => db.days.where("date").equals(date).first(),

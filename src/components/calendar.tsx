@@ -2,14 +2,14 @@
 import React, { useEffect, useMemo, useState } from "react";
 import { DateTime } from "luxon";
 import Badge from "./badge";
-import Day from "@/types/day";
-import { Status as StatusDay } from "@/types/dayDto";
+import type DayType from "@/types/day";
+import { DayStatusType } from "@/types/day";
 
 const Calendar = ({
   dates = [],
   onPress = () => {},
 }: {
-  dates?: Day[];
+  dates?: DayType[];
   onPress?: (day: DateTime) => void;
 }) => {
   const [date, setDate] = useState(DateTime.now());
@@ -33,13 +33,13 @@ const Calendar = ({
           else color = "bg-zinc-500";
 
         let badgeColor = "bg-red-500";
-        const taskDay = dates.find((day) =>
+        const day = dates.find((day) =>
           currentDate.hasSame(DateTime.fromMillis(day.date), "day")
         );
-        if (taskDay)
-          if (taskDay.status === StatusDay.COMPLETED)
+        if (day)
+          if (day.status === DayStatusType.COMPLETED)
             badgeColor = "bg-green-500";
-          else if (taskDay.status === StatusDay.PARTIAL)
+          else if (day.status === DayStatusType.PARTIAL)
             badgeColor = "bg-yellow-500";
 
         row.push(

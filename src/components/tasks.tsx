@@ -2,10 +2,15 @@ import useDb from "@/hooks/useDb";
 import Button from "./button";
 import Task from "@/components/task";
 import { ButtonType } from "@/types/buttonType";
-import { Status as StatusDay } from "@/types/dayDto";
 import { wrapPromise } from "@/utils/suspense";
 import { Suspense, useMemo, useRef, useState } from "react";
 import ActivityIndicator from "./activityIndicator";
+import { DayStatusType } from "@/types/day";
+import { toast } from "react-toastify";
+import useAlert from "@/hooks/useAlert";
+import { AlertParamsType } from "@/types/alert";
+import { DateTime } from "luxon";
+import { now } from "@/utils/date";
 
 const Tasks = ({
   date,
@@ -17,6 +22,8 @@ const Tasks = ({
   extra?: unknown;
 }) => {
   const db = useDb();
+  const alert = useAlert();
+
   const [markedTasks, setMarkedTasks] = useState<number[]>([]);
   const _tasks = useRef<Task[]>([]);
   const tasks = _tasks.current;
@@ -27,39 +34,111 @@ const Tasks = ({
   );
 
   const removeTask = (task: Task) => {
-    db.updateTask(task.id, { end: date });
-    onAction();
+    const remove = (end: number) => {
+      try {
+        db.updateTask(task.id, { end });
+        onAction();
+      } catch (error) {
+        toast.error((error as Error).message);
+      }
+    };
+
+    const params: AlertParamsType = {
+      title: "Before Removing",
+      body:
+        'The task "' +
+        task.name +
+        '" will be marked as removed in the day ' +
+        DateTime.fromMillis(date).toLocaleString(DateTime.DATE_SHORT) +
+        ". Are You sure?",
+      options: [],
+    };
+    params.options!.push({
+      title: "Yes",
+      onPress: () => remove(date),
+      type: ButtonType.SUCCESS,
+    });
+    const today = now().toMillis();
+    if (date !== today)
+      params.options!.push({
+        title: "Remove today",
+        onPress: () => remove(today),
+        type: ButtonType.PRIMARY,
+      });
+    params.options!.push({
+      title: "No",
+      onPress: alert.close,
+      type: ButtonType.DANGER,
+    });
+
+    alert.open(params);
   };
 
-  const setCompleted = async () => {
-    const obj = {
-      date,
-      tasks: tasks.map(({ name }) => name),
-      status: StatusDay.COMPLETED,
+  const setCompleted = (isPartial: boolean) => {
+    const setCompleted = async (date: number) => {
+      const obj = {
+        date,
+        tasks: tasks.map(({ name }) => name),
+        status: DayStatusType.COMPLETED,
+      };
+      updateDay(obj);
     };
-    updateDay(obj);
-  };
 
-  const setPartialCompleted = async () => {
-    const obj = {
-      date,
-      tasks: tasks
-        .filter(({ id }) => markedTasks.includes(id))
-        .map(({ name }) => name),
-      status: StatusDay.PARTIAL,
+    const setPartialCompleted = async (date: number) => {
+      const obj = {
+        date,
+        tasks: tasks
+          .filter(({ id }) => markedTasks.includes(id))
+          .map(({ name }) => name),
+        status: DayStatusType.PARTIAL,
+      };
+      updateDay(obj);
     };
-    updateDay(obj);
+
+    const params: AlertParamsType = {
+      title: "Before Completing",
+      body:
+        "The completion will be set for the day " +
+        DateTime.fromMillis(date).toLocaleString(DateTime.DATE_SHORT) +
+        ". Are You sure?",
+      options: [],
+    };
+    params.options!.push({
+      title: "Yes",
+      onPress: () =>
+        isPartial ? setCompleted(date) : setPartialCompleted(date),
+      type: ButtonType.SUCCESS,
+    });
+    const today = now().toMillis();
+    if (date !== today)
+      params.options!.push({
+        title: "Mark today",
+        onPress: () =>
+          isPartial ? setCompleted(today) : setPartialCompleted(today),
+        type: ButtonType.PRIMARY,
+      });
+    params.options!.push({
+      title: "No",
+      onPress: alert.close,
+      type: ButtonType.DANGER,
+    });
+
+    alert.open(params);
   };
 
   const updateDay = async (obj: {
     date: number;
     tasks: string[];
-    status: StatusDay;
+    status: DayStatusType;
   }) => {
-    const dbEntry = await db.day(obj.date);
-    if (dbEntry) await db.updateDay(dbEntry.id, obj);
-    else await db.addDay(obj);
-    onAction();
+    try {
+      const dbEntry = await db.day(obj.date);
+      if (dbEntry) await db.updateDay(dbEntry.id, obj);
+      else await db.addDay(obj);
+      onAction();
+    } catch (error) {
+      toast.error((error as Error).message);
+    }
   };
 
   const markTask = ({ id }: Task, checked: boolean) => {
@@ -78,12 +157,12 @@ const Tasks = ({
           <div className="flex gap-2">
             <Button
               title="All Completed"
-              onPress={setCompleted}
+              onPress={() => setCompleted(false)}
               color={ButtonType.SUCCESS}
             />
             <Button
               title="Only Checked"
-              onPress={setPartialCompleted}
+              onPress={() => setCompleted(true)}
               color={ButtonType.WARNING}
             />
           </div>

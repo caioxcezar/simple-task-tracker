@@ -1,4 +1,4 @@
-export default interface Task {
+export default interface TaskType {
   id: number;
   name: string;
   start: number;

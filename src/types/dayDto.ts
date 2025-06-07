@@ -1,11 +1,7 @@
-export default interface DayDto {
-  date: number;
-  status: Status;
-  tasks: string[];
-}
+import { DayStatusType } from "./day";
 
-export enum Status {
-  INCOMPLETED,
-  COMPLETED,
-  PARTIAL,
+export default interface DayTypeDto {
+  date: number;
+  status: DayStatusType;
+  tasks: string[];
 }
